@@ -1,0 +1,7 @@
+function [voutestim,vref,g]=AGC(signal,N,time,var_noise)
+vref=0;
+g=0;
+Pow_sig_recvf=sum(abs(signal.^2));
+voutestim+20*log10()
+if Pow_sig_recvf
+
