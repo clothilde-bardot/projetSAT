@@ -187,7 +187,7 @@ for i = 1:nb_loops %nb d'itération
             val_Aq = val_Aq + alpha * error;
     
             % Limites de sécurité
-            val_Aq = max(0.1, min(2.0, val_Aq));
+            % val_Aq = max(0.1, min(2.0, val_Aq));
 
         % Enregistrement des valeurs à chaque itération
         gain_history(n) = val_Aq;
