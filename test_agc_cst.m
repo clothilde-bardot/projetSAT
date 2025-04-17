@@ -17,15 +17,15 @@ nb_loops = 10;
 
 Ti = 1e-3;
 
-M = 1/Ti; % nmb de sorties du corrélateurs sur 1s
+M = 1/Ti; % nmb de sorties du corrélateur sur 1s
 
-
+total_iter = nb_loops * M;
 
 % Paramètres AGC
 v_ref = 3;          % Niveau de sortie désiré
-alpha = 0.5;       % Coefficient du filtre de boucle
-val_A = 1;           % Gain initial du VGA
-val_Aq = val_A;
+K_0 = 0.1;       % Coefficient du filtre de boucle
+g0 = 1;           % Gain initial du VGA
+gq = g0;
 
 
 
@@ -34,22 +34,20 @@ val_Aq = val_A;
 
 r_out = zeros(1,N);     % Signal de sortie
 
-val_A_history = zeros(1,M); %historique gain AGC
+g_history = zeros(1, total_iter);
+r_out_history = zeros(1, total_iter);
+error_history = zeros(1, total_iter);
 
-r_out_history = zeros(1,M);
-
-error_history = zeros(1,M);
-
+k=1;
 
 for i = 1:nb_loops %nb d'itération
     disp(['Num Loops = ' num2str(i) '/' num2str(nb_loops)])
 
     for n = 1:M
-        
         %AGC
 
         % Gain VGA
-        r_in_gain = val_Aq*r_in;
+        r_in_gain = gq*r_in;
 
         % Mesure de l'amplitude (detector)
         current_level = abs(r_in_gain(n));
@@ -58,20 +56,21 @@ for i = 1:nb_loops %nb d'itération
         error = v_ref - current_level;
 
         % Signal de sortie
-        r_out = r_in_gain;
-
+        r_out = r_in_gain(n);
+        disp(['Itération ' num2str(n) ' : r\_out = ' num2str(r_out)]);
         %MAJ du gain
-        val_Aq = val_Aq + alpha * error;
+        %gq = gq + K_0 * error;
+        gq = min(max(gq + K_0 * error, 0), 10);
 
         % Stockage pour visualisation
-        val_A_history(n) = val_Aq;
-        r_out_history(n) = mean(r_out);        
-        error_history(n) = error;
-
+        g_history(k) = gq;
+        r_out_history(k) = r_out;        
+        error_history(k) = error;
+        k=k+1;
     end 
 end
 
-
+t_agc = (0:total_iter-1) * Ti;
 
 %% Visualisation
 figure;
@@ -79,7 +78,7 @@ figure;
 % Signal d'entrée
 subplot(3,1,1);
 plot(t, r_in, 'b', 'LineWidth', 1.5);
-title('Signal d''entrée x(t)');
+title('Signal d''entrée');
 xlabel('Temps (s)');
 ylabel('Amplitude');
 ylim([0 10]);
@@ -87,10 +86,10 @@ grid on;
 
 % Signal de sortie
 subplot(3,1,2);
-plot(t, r_out, 'r', 'LineWidth', 1.5);
+plot(t_agc, r_out_history, 'r', 'LineWidth', 1.5);
 hold on;
 yline(v_ref, '--k', 'v_{ref}');
-title('Signal de sortie y(t) après AGC');
+title('Signal de sortie après AGC');
 xlabel('Temps (s)');
 ylabel('Amplitude');
 ylim([0 10]);
@@ -98,8 +97,8 @@ grid on;
 
 % Évolution du gain
 subplot(3,1,3);
-plot(t, val_A_history, 'g', 'LineWidth', 1.5);
-title('Évolution du gain du VGA');
+plot(t_agc, g_history, 'g', 'LineWidth', 1.5);
+title('Évolution du gain');
 xlabel('Temps (s)');
 ylabel('Gain');
 grid on;
